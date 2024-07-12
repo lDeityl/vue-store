@@ -1,4 +1,5 @@
 <script setup>
+
 defineProps({
     imageUrl: String,
     title: String,
@@ -7,7 +8,8 @@ defineProps({
     isAdded: Boolean,
     onClickFavourite: Function,
     onClickAdd: Function
-})
+});
+
 </script>
 
 <template>
