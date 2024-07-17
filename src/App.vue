@@ -1,8 +1,9 @@
 <script setup>
+
 import { onMounted, reactive, ref, watch } from 'vue';
 import axios from 'axios';
 
-import Header from './components/Header.vue'
+import HeaderBlock from './components/Header.vue'
 import CardList from './components/CardList.vue'
 import Drawer from './components/Drawer.vue'
 
@@ -13,47 +14,69 @@ const filters = reactive({
     searchQuery: ''
 });
 
-const onChangeSelect = e => {
-    filters.sortBy = e.target.value;
-}
+const onChangeSelect = e => filters.sortBy = e.target.value;
 
-const onChangeSearchInput = e => {
-    filters.searchQuery = e.target.value;
-}
+const onChangeSearchInput = e => filters.searchQuery = e.target.value;
+
+const fetchFavourites = async () => {
+    try {
+        const { data: favourites } = await axios.get(`https://20a00b2442988ca5.mokky.dev/favourites`);
+        items.value = items.value.map(item => {
+
+            const favourite = favourites.find(favourite => favourite.parentId === item.id);
+
+            if (!favourite) { return item; }
+
+            return {
+                ...item,
+                isFavourite: true,
+                favouriteId: favourite.id,
+            };
+        });
+    } catch (e) {
+        console.log(e);
+    }
+};
+
+const addToFavourite = async (item) => {
+    item.isFavourite = true;
+};
 
 const fetchItems = async () => {
 
     try {
 
-        const params = {
-            sortBy: filters.sortBy,
-        }
+        const params = { sortBy: filters.sortBy };
+        if (filters.searchQuery) params.title = `*${filters.searchQuery}*`;
 
-        if (filters.searchQuery) {
-            params.title = `*${filters.searchQuery}*`;
-        }
+        const { data } = await axios.get(`https://20a00b2442988ca5.mokky.dev/items`, { params });
 
-        const { data } = await axios.get(`https://20a00b2442988ca5.mokky.dev/items`, {
-            params
-        });
+        items.value = data.map(obj => ({
+            ...obj,
+            isFavourite: false,
+            isAdded: false,
+        }));
 
-        items.value = data;
     } catch (e) {
         console.log(e);
     }
 
 }
 
-onMounted(fetchItems); // useEffect(() => { }, [ ])
+onMounted(async () => {
+    await fetchItems();
+    await fetchFavourites();
+}); // useEffect(() => { })
 
-watch(filters, fetchItems);
+watch(filters, fetchItems); // useEffect(() => { }, [filters])
 
 </script>
 
 <template>
     <!-- <Drawer /> -->
-    <div class="bg-white w-4/5 m-auto  rounded-xl shadow-xl mt-14">
-        <Header />
+    <div class="bg-white w-4/5 m-auto rounded-xl shadow-xl mt-14">
+
+        <HeaderBlock />
 
         <div class="p-10">
             <div class="flex justify-between items-center">
@@ -73,6 +96,8 @@ watch(filters, fetchItems);
                 </div>
             </div>
         </div>
+
         <CardList :items="items" />
+
     </div>
 </template>
